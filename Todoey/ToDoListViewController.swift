@@ -12,9 +12,18 @@ class ToDoListViewController: UITableViewController {
 
     var itemArray = ["Order groceries", "Plot out a good first iOS app", "Finish reading The Black Jacobins", "Rent A Wrinkle In Time"]
     
+    //MARK - Setting up UserDefaults
+    //used for storing information locally, between app launches
+    let defaults = UserDefaults.standard
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        //using the NSUserDefaults stored database to fill out our array
+        if let itemArray = defaults.array(forKey: "TodoListArray") as? [String] {
+            
+            itemArray = items
+        }
         
     }
     
@@ -60,6 +69,10 @@ class ToDoListViewController: UITableViewController {
             
             //add new item to todo list, reload the tableView to show the new data
             self.itemArray.append(textField.text!)
+            
+            //save updated array to userdefaults
+            self.defaults.set(self.itemArray, forKey: "TodoListArray")
+            
             self.tableView.reloadData()
         }
         
