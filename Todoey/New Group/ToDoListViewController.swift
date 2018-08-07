@@ -11,6 +11,7 @@ import UIKit
 class ToDoListViewController: UITableViewController {
 
     var itemArray = [Item]()
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist") //shared filemanager singleton, looking in the user's home directory. This where we store our user's to-do list.
     
     //MARK - Setting up UserDefaults
     //used for storing information locally, between app launches
@@ -19,24 +20,17 @@ class ToDoListViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let newItem = Item()
-        newItem.title = "Find Mike"
-        itemArray.append(newItem)
+        print(dataFilePath!)
         
-        let newItem2 = Item()
-        newItem2.title = "Find Dave"
-        itemArray.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem3.title = "Find Tasha"
-        itemArray.append(newItem3)
+        //load our encoded items
+        loadItems()
 
         
 //        using the NSUserDefaults stored database to fill out our array
-        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
-
-            itemArray = items
-        }
+//        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
+//
+//            itemArray = items
+//        }
         
     }
     
@@ -67,10 +61,11 @@ class ToDoListViewController: UITableViewController {
     //fired when we click on a cell
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 
-        //figure out whether or not the item on the list is done
+        //figure out whether or not the item on the list is done for checkmark
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
-        tableView.reloadData()
+        //encoding the done status
+        saveItems()
         
         //make the selection animation fade-out
         tableView.deselectRow(at: indexPath, animated: true)
@@ -91,10 +86,7 @@ class ToDoListViewController: UITableViewController {
             newItem.title = textField.text!
             self.itemArray.append(newItem)
             
-            //save updated array to userdefaults
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            
-            self.tableView.reloadData()
+            self.saveItems()
         }
         
         //adding the text field to our alert
@@ -109,6 +101,28 @@ class ToDoListViewController: UITableViewController {
         
     }
     
-
+    //MARK - Save function
+    func saveItems() {
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding item array, \(error)")
+        }
+        
+        self.tableView.reloadData()
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+            print("Error decoding item array, \(error)")
+            }
+        }
+    }
 }
-

@@ -24,14 +24,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationWillResignActive(_ application: UIApplication) {
        
-        print("Did resign active")
 
         
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
       
-        print("Did enter background")
 
         
     }
@@ -47,7 +45,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillTerminate(_ application: UIApplication) {
         
         
-        print("Did terminate")
 
         
     }

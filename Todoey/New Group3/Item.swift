@@ -8,7 +8,8 @@
 
 import Foundation
 
-class Item {
+//encodable, decodale or, just codable in Swift 4 and newer, means that all properties use STANDARD data types
+class Item: Codable {
     
     var title: String = ""
     var done: Bool = false
