@@ -16,7 +16,7 @@ class ToDoListViewController: UITableViewController {
     //grab the app delegate with UIApplication.shared.delegate
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
-    //MARK - Setting up UserDefaults
+    //MARK: - Setting up UserDefaults
     //used for storing information locally, between app launches
     let defaults = UserDefaults.standard
     
@@ -40,7 +40,7 @@ class ToDoListViewController: UITableViewController {
         
     }
     
-    //MARK - Tableview Datasource Methods
+    //MARK: - Tableview Datasource Methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return itemArray.count
     }
@@ -63,7 +63,7 @@ class ToDoListViewController: UITableViewController {
         
     }
     
-    //MARK - TableView Delegate Methods
+    //MARK: - TableView Delegate Methods
     //fired when we click on a cell
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 
