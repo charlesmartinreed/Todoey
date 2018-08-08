@@ -7,11 +7,14 @@
 //
 
 import UIKit
+import CoreData
 
 class ToDoListViewController: UITableViewController {
 
     var itemArray = [Item]()
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist") //shared filemanager singleton, looking in the user's home directory. This where we store our user's to-do list.
+    //let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist") //shared filemanager singleton, looking in the user's home directory. This where we store our user's to-do list.
+    //grab the app delegate with UIApplication.shared.delegate
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     //MARK - Setting up UserDefaults
     //used for storing information locally, between app launches
@@ -20,9 +23,12 @@ class ToDoListViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        print(dataFilePath!)
+        //where our data is currently being stored
+        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
-        //load our encoded items
+        
+        
+        //load our items from our Core Data database
         loadItems()
 
         
@@ -61,10 +67,21 @@ class ToDoListViewController: UITableViewController {
     //fired when we click on a cell
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 
+        //MARK: UPDATING DATA FROM CORE DATA - 'U' IN CRUD
+        //example of updating the database using KV coding
+//        itemArray[indexPath.row].setValue("Completed", forKey: "title")
+        
         //figure out whether or not the item on the list is done for checkmark
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
-        //encoding the done status
+        //MARK: DELETING DATA FOR CORE DATA - 'D' IN CRUD
+        //remove from the NSManagedObject in Core Data database
+//        context.delete(itemArray[indexPath.row])
+        
+        //remove from itemArray - called after context.delete to avoid out of range causal loop error
+//        itemArray.remove(at: indexPath.row)
+        
+        //SAVING TO OUR CORE DATA DATABASE
         saveItems()
         
         //make the selection animation fade-out
@@ -72,7 +89,7 @@ class ToDoListViewController: UITableViewController {
         
     }
     
-    //MARK - Add new items
+    //MARK: CREATING DATA FOR CORE DATA - 'C' IN CRUD
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         //used for our user's text
         var textField = UITextField()
@@ -82,8 +99,10 @@ class ToDoListViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             
             //add new item to todo list, reload the tableView to show the new data
-            let newItem = Item()
+            //context: self.context allows us to tie our data to Core Data
+            let newItem = Item(context: self.context)
             newItem.title = textField.text!
+            newItem.done = false
             self.itemArray.append(newItem)
             
             self.saveItems()
@@ -103,26 +122,68 @@ class ToDoListViewController: UITableViewController {
     
     //MARK - Save function
     func saveItems() {
-        let encoder = PropertyListEncoder()
         
         do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
         } catch {
-            print("Error encoding item array, \(error)")
+            print("Error saving context \(error)")
         }
         
         self.tableView.reloadData()
     }
     
-    func loadItems() {
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([Item].self, from: data)
-            } catch {
-            print("Error decoding item array, \(error)")
+    //MARK: READING DATA FROM CORE DATA - 'R' IN CRUD
+    //providing a default value for the param so that we can call at view load without giving it any parameters
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+        
+        //loading data via Core Data
+        //since swift can't infer, we have to specify type for request AND the entity
+       // let request: NSFetchRequest<Item> = Item.fetchRequest()
+        do {
+            //because we're storing items in an item array
+            //fetchRequest mandates a return, we're returning an array of Item entities
+            itemArray = try context.fetch(request)
+        } catch {
+            print("Error fetching data from context: \(error) ")
+        }
+        
+        tableView.reloadData()
+    }
+    
+}
+
+//instead of adding a million different delegate methods at the class defintion, we can extend it as such
+//MARK: - Search bar methods
+extension ToDoListViewController: UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        //reload the table view, using text that the user has entered
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        
+        //using NSPredicate - when we hit search, the query text is used to search whether the title of the entity attribute matches - case and diactric insensitive with [cd]
+        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        
+        //sort the data returned
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        
+        //return the filtered data to the tableView
+        loadItems(with: request)
+
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        //triggered when text is entered or, for our use case, when the x button is clicked to clear out the entered text
+
+        if searchBar.text?.count == 0 {
+            loadItems() //has a default request of pulling all items from our data store
+            
+            //we need to speak to the main thread, by talking to the dispatch queue
+            //by doing this, we're able to update the UI
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder() //dismiss the keyboard, remove the cursor
             }
+            
         }
     }
+    
 }
