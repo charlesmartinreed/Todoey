@@ -11,6 +11,13 @@ import CoreData
 
 class ToDoListViewController: UITableViewController {
 
+    var selectedCategory: Category? {
+        didSet {
+            //when set, during the segue, items will be loaded. This replaces our old view did load call.
+            loadItems()
+        }
+    }
+    
     var itemArray = [Item]()
     //let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist") //shared filemanager singleton, looking in the user's home directory. This where we store our user's to-do list.
     //grab the app delegate with UIApplication.shared.delegate
@@ -26,10 +33,6 @@ class ToDoListViewController: UITableViewController {
         //where our data is currently being stored
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
-        
-        
-        //load our items from our Core Data database
-        loadItems()
 
         
 //        using the NSUserDefaults stored database to fill out our array
@@ -103,6 +106,7 @@ class ToDoListViewController: UITableViewController {
             let newItem = Item(context: self.context)
             newItem.title = textField.text!
             newItem.done = false
+            newItem.parentCategory = self.selectedCategory
             self.itemArray.append(newItem)
             
             self.saveItems()
@@ -134,7 +138,22 @@ class ToDoListViewController: UITableViewController {
     
     //MARK: READING DATA FROM CORE DATA - 'R' IN CRUD
     //providing a default value for the param so that we can call at view load without giving it any parameters
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
+        
+        //filtering results to allow for only selectedCategory and parentCategory matches to be shown
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+
+        if let additionalPredicate = predicate {
+            
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
+        } else {
+           
+            request.predicate = categoryPredicate
+        }
+        
+//        let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, predicate])
+//
+//        request.predicate = compoundPredicate
         
         //loading data via Core Data
         //since swift can't infer, we have to specify type for request AND the entity
@@ -161,13 +180,13 @@ extension ToDoListViewController: UISearchBarDelegate {
         let request: NSFetchRequest<Item> = Item.fetchRequest()
         
         //using NSPredicate - when we hit search, the query text is used to search whether the title of the entity attribute matches - case and diactric insensitive with [cd]
-        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
         
         //sort the data returned
         request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
         
         //return the filtered data to the tableView
-        loadItems(with: request)
+        loadItems(with: request, predicate: predicate)
 
     }
     

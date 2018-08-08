@@ -43,12 +43,6 @@ class CategoryViewController: UITableViewController {
         return cell
     }
     
-    //MARK: - TableView Delegate Methods
-    
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        //do something
-        
-    }
 
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         var textField = UITextField()
@@ -75,6 +69,22 @@ class CategoryViewController: UITableViewController {
         
     }
     
+    //MARK: - TableView Delegate Methods
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        //trigger segue from the Category View Controller to ToDoList View Controller
+        performSegue(withIdentifier: "goToItems", sender: self)
+        
+    }
+    
+    //we need to init the list on the other end of our segue request with ONLY the items tht are relevant to the list in question
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        let destinationVC = segue.destination as? ToDoListViewController
+        
+        if let indexPath = tableView.indexPathForSelectedRow {
+            destinationVC?.selectedCategory = categoryArray[indexPath.row]
+        }
+    }
   
     
     //MARK: - Data Manipulation Methods
@@ -83,15 +93,14 @@ class CategoryViewController: UITableViewController {
         do {
             try context.save()
         } catch {
-            print("Error adding category: \(error)")
+            print("Error saving category: \(error)")
         }
         
         tableView.reloadData()
     }
     
-    func loadCategory() {
+    func loadCategory(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
         
-        let request: NSFetchRequest<Category> = Category.fetchRequest()
         do {
             categoryArray = try context.fetch(request)
         } catch {
