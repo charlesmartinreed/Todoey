@@ -71,20 +71,18 @@ class ToDoListViewController: UITableViewController {
     //fired when we click on a cell
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 
-        //MARK: UPDATING DATA FROM CORE DATA - 'U' IN CRUD
-        //example of updating the database using KV coding
-//        itemArray[indexPath.row].setValue("Completed", forKey: "title")
+        if let item = todoItems?[indexPath.row] {
+            do {
+                try realm.write {
+                    item.done = !item.done
+                }
+            } catch {
+                print("Error saving done status: \(error)")
+            }
+            
+        }
         
-        //figure out whether or not the item on the list is done for checkmark
-//        todoItems[indexPath.row].done = !todoItems[indexPath.row].done
-        
-        //MARK: DELETING DATA FOR CORE DATA - 'D' IN CRUD
-        //remove from the NSManagedObject in Core Data database
-//        context.delete(itemArray[indexPath.row])
-        
-        //remove from itemArray - called after context.delete to avoid out of range causal loop error
-//        itemArray.remove(at: indexPath.row)
-        
+        tableView.reloadData()
         
         //make the selection animation fade-out
         tableView.deselectRow(at: indexPath, animated: true)
