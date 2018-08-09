@@ -11,6 +11,10 @@ import RealmSwift
 
 class ToDoListViewController: UITableViewController {
 
+    var todoItems: Results<Item>?
+    
+    let realm = try! Realm()
+    
     var selectedCategory: Category? {
         didSet {
             //when set, during the segue, items will be loaded. This replaces our old view did load call.
@@ -18,7 +22,7 @@ class ToDoListViewController: UITableViewController {
         }
     }
     
-    var itemArray = [Item]()
+    
     
     //MARK: - Setting up UserDefaults
     //used for storing information locally, between app launches
@@ -42,22 +46,22 @@ class ToDoListViewController: UITableViewController {
     
     //MARK: - Tableview Datasource Methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.count
+        return todoItems?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "toDoItemCell", for: indexPath)
         
-        let item = itemArray[indexPath.row]
-        
-        cell.textLabel?.text = item.title
-        
-       
-        //add or remove checkmark accessory to cell
-        //using ternary operator
-        // value = condition ? valueIfTrue : valueIfFalse
-        cell.accessoryType = item.done ? .checkmark : .none
+        if let item = todoItems?[indexPath.row] {
+            
+            cell.textLabel?.text = item.title
+            cell.accessoryType = item.done ? .checkmark : .none
+            
+        } else {
+            cell.textLabel?.text = "No Items Added"
+
+        }
         
         return cell
         
@@ -72,7 +76,7 @@ class ToDoListViewController: UITableViewController {
 //        itemArray[indexPath.row].setValue("Completed", forKey: "title")
         
         //figure out whether or not the item on the list is done for checkmark
-        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+//        todoItems[indexPath.row].done = !todoItems[indexPath.row].done
         
         //MARK: DELETING DATA FOR CORE DATA - 'D' IN CRUD
         //remove from the NSManagedObject in Core Data database
@@ -81,8 +85,6 @@ class ToDoListViewController: UITableViewController {
         //remove from itemArray - called after context.delete to avoid out of range causal loop error
 //        itemArray.remove(at: indexPath.row)
         
-        //SAVING TO OUR CORE DATA DATABASE
-        saveItems()
         
         //make the selection animation fade-out
         tableView.deselectRow(at: indexPath, animated: true)
@@ -99,16 +101,21 @@ class ToDoListViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             
             //add new item to todo list, reload the tableView to show the new data
-            //context: self.context allows us to tie our data to Core Data
-            let newItem = Item()
-            newItem.title = textField.text!
-            newItem.done = false
-//            newItem.parentCategory = self.selectedCategory
-            self.itemArray.append(newItem)
             
-            self.saveItems()
-        }
-        
+            if let currentCategory = self.selectedCategory {
+                do {
+                    try self.realm.write {
+                        let newItem = Item()
+                        newItem.title = textField.text!
+                        currentCategory.items.append(newItem) //creates the relationship between item and category
+                    }
+                } catch {
+                    print("Error saving data: \(error)")
+                    }
+                }
+            
+            self.tableView.reloadData()
+    }
         //adding the text field to our alert
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Create new item"
@@ -122,48 +129,14 @@ class ToDoListViewController: UITableViewController {
     }
     
     //MARK - Save function
-    func saveItems() {
-//
-//        do {
-//            try context.save()
-//        } catch {
-//            print("Error saving context \(error)")
-//        }
-//
-//        self.tableView.reloadData()
-    }
     
     //MARK: READING DATA FROM CORE DATA - 'R' IN CRUD
     //providing a default value for the param so that we can call at view load without giving it any parameters
     func loadItems() {
         
-        //filtering results to allow for only selectedCategory and parentCategory matches to be shown
-//        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
-//
-//        if let additionalPredicate = predicate {
-//
-//            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
-//        } else {
-//
-//            request.predicate = categoryPredicate
-//        }
-        
-//        let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, predicate])
-//
-//        request.predicate = compoundPredicate
-        
-        //loading data via Core Data
-        //since swift can't infer, we have to specify type for request AND the entity
-       // let request: NSFetchRequest<Item> = Item.fetchRequest()
-//        do {
-//            //because we're storing items in an item array
-//            //fetchRequest mandates a return, we're returning an array of Item entities
-//            itemArray = try context.fetch(request)
-//        } catch {
-//            print("Error fetching data from context: \(error) ")
-//        }
-//
-//        tableView.reloadData()
+        todoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
+
+        tableView.reloadData()
     }
     
 }

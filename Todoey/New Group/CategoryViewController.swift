@@ -13,8 +13,9 @@ class CategoryViewController: UITableViewController {
     
     let realm = try! Realm()
     
-    var categoryArray = [Category]()
-
+    //results type is auto-updating, so we can get real-time information from our database
+    var categoryArray: Results<Category>?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -23,7 +24,7 @@ class CategoryViewController: UITableViewController {
 //        newCategory.name = "Test Category"
 //        categoryArray.append(newCategory)
         
-//        loadCategory()
+        loadCategory()
         
     }
 
@@ -31,14 +32,14 @@ class CategoryViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
-        return categoryArray.count
+        return categoryArray?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
         
-        cell.textLabel?.text = categoryArray[indexPath.row].name
+        cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "No Categories Added Yet"
         
         return cell
     }
@@ -54,7 +55,6 @@ class CategoryViewController: UITableViewController {
             
             let newCategory = Category()
             newCategory.name = textField.text!
-            self.categoryArray.append(newCategory)
             
             self.save(category: newCategory)
         }
@@ -82,7 +82,7 @@ class CategoryViewController: UITableViewController {
         let destinationVC = segue.destination as? ToDoListViewController
         
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC?.selectedCategory = categoryArray[indexPath.row]
+            destinationVC?.selectedCategory = categoryArray?[indexPath.row]
         }
     }
   
@@ -102,13 +102,10 @@ class CategoryViewController: UITableViewController {
     }
     
     func loadCategory() {
-//
-//        do {
-//            categoryArray = try context.fetch(request)
-//        } catch {
-//            print("Error retreiving categories: \(error)")
-//        }
-//
-//        tableView.reloadData()
-        }
+
+        categoryArray = realm.objects(Category.self)
+
+        tableView.reloadData()
+        
+    }
 }
