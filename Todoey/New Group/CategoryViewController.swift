@@ -7,13 +7,13 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
     
-    var categoryArray = [Category]()
+    let realm = try! Realm()
     
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    var categoryArray = [Category]()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,7 +23,7 @@ class CategoryViewController: UITableViewController {
 //        newCategory.name = "Test Category"
 //        categoryArray.append(newCategory)
         
-        loadCategory()
+//        loadCategory()
         
     }
 
@@ -52,11 +52,11 @@ class CategoryViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Category", style: .default) { (action) in
             //what happens when user tries to add a new category
             
-            let newCategory = Category(context: self.context)
+            let newCategory = Category()
             newCategory.name = textField.text!
             self.categoryArray.append(newCategory)
             
-            self.saveCategory()
+            self.save(category: newCategory)
         }
         
         alert.addTextField { (alertTextField) in
@@ -88,10 +88,12 @@ class CategoryViewController: UITableViewController {
   
     
     //MARK: - Data Manipulation Methods
-    func saveCategory() {
-        
+    func save(category: Category) {
+
         do {
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         } catch {
             print("Error saving category: \(error)")
         }
@@ -99,14 +101,14 @@ class CategoryViewController: UITableViewController {
         tableView.reloadData()
     }
     
-    func loadCategory(with request: NSFetchRequest<Category> = Category.fetchRequest()) {
-        
-        do {
-            categoryArray = try context.fetch(request)
-        } catch {
-            print("Error retreiving categories: \(error)")
+    func loadCategory() {
+//
+//        do {
+//            categoryArray = try context.fetch(request)
+//        } catch {
+//            print("Error retreiving categories: \(error)")
+//        }
+//
+//        tableView.reloadData()
         }
-        
-        tableView.reloadData()
-    }
 }

@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class ToDoListViewController: UITableViewController {
 
@@ -19,9 +19,6 @@ class ToDoListViewController: UITableViewController {
     }
     
     var itemArray = [Item]()
-    //let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist") //shared filemanager singleton, looking in the user's home directory. This where we store our user's to-do list.
-    //grab the app delegate with UIApplication.shared.delegate
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     //MARK: - Setting up UserDefaults
     //used for storing information locally, between app launches
@@ -103,10 +100,10 @@ class ToDoListViewController: UITableViewController {
             
             //add new item to todo list, reload the tableView to show the new data
             //context: self.context allows us to tie our data to Core Data
-            let newItem = Item(context: self.context)
+            let newItem = Item()
             newItem.title = textField.text!
             newItem.done = false
-            newItem.parentCategory = self.selectedCategory
+//            newItem.parentCategory = self.selectedCategory
             self.itemArray.append(newItem)
             
             self.saveItems()
@@ -126,30 +123,30 @@ class ToDoListViewController: UITableViewController {
     
     //MARK - Save function
     func saveItems() {
-        
-        do {
-            try context.save()
-        } catch {
-            print("Error saving context \(error)")
-        }
-        
-        self.tableView.reloadData()
+//
+//        do {
+//            try context.save()
+//        } catch {
+//            print("Error saving context \(error)")
+//        }
+//
+//        self.tableView.reloadData()
     }
     
     //MARK: READING DATA FROM CORE DATA - 'R' IN CRUD
     //providing a default value for the param so that we can call at view load without giving it any parameters
-    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
+    func loadItems() {
         
         //filtering results to allow for only selectedCategory and parentCategory matches to be shown
-        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
-
-        if let additionalPredicate = predicate {
-            
-            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
-        } else {
-           
-            request.predicate = categoryPredicate
-        }
+//        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+//
+//        if let additionalPredicate = predicate {
+//
+//            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
+//        } else {
+//
+//            request.predicate = categoryPredicate
+//        }
         
 //        let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, predicate])
 //
@@ -158,51 +155,51 @@ class ToDoListViewController: UITableViewController {
         //loading data via Core Data
         //since swift can't infer, we have to specify type for request AND the entity
        // let request: NSFetchRequest<Item> = Item.fetchRequest()
-        do {
-            //because we're storing items in an item array
-            //fetchRequest mandates a return, we're returning an array of Item entities
-            itemArray = try context.fetch(request)
-        } catch {
-            print("Error fetching data from context: \(error) ")
-        }
-        
-        tableView.reloadData()
+//        do {
+//            //because we're storing items in an item array
+//            //fetchRequest mandates a return, we're returning an array of Item entities
+//            itemArray = try context.fetch(request)
+//        } catch {
+//            print("Error fetching data from context: \(error) ")
+//        }
+//
+//        tableView.reloadData()
     }
     
 }
 
 //instead of adding a million different delegate methods at the class defintion, we can extend it as such
 //MARK: - Search bar methods
-extension ToDoListViewController: UISearchBarDelegate {
-    
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        //reload the table view, using text that the user has entered
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
-        
-        //using NSPredicate - when we hit search, the query text is used to search whether the title of the entity attribute matches - case and diactric insensitive with [cd]
-        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-        
-        //sort the data returned
-        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-        
-        //return the filtered data to the tableView
-        loadItems(with: request, predicate: predicate)
+//extension ToDoListViewController: UISearchBarDelegate {
+//
+//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+//        //reload the table view, using text that the user has entered
+//        let request: NSFetchRequest<Item> = Item.fetchRequest()
+//
+//        //using NSPredicate - when we hit search, the query text is used to search whether the title of the entity attribute matches - case and diactric insensitive with [cd]
+//        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+//
+//        //sort the data returned
+//        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+//
+//        //return the filtered data to the tableView
+//        loadItems(with: request, predicate: predicate)
+//
+//    }
+//
+//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+//        //triggered when text is entered or, for our use case, when the x button is clicked to clear out the entered text
+//
+//        if searchBar.text?.count == 0 {
+//            loadItems() //has a default request of pulling all items from our data store
+//
+//            //we need to speak to the main thread, by talking to the dispatch queue
+//            //by doing this, we're able to update the UI
+//            DispatchQueue.main.async {
+//                searchBar.resignFirstResponder() //dismiss the keyboard, remove the cursor
+//            }
+//
+//        }
+//    }
 
-    }
-    
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        //triggered when text is entered or, for our use case, when the x button is clicked to clear out the entered text
-
-        if searchBar.text?.count == 0 {
-            loadItems() //has a default request of pulling all items from our data store
-            
-            //we need to speak to the main thread, by talking to the dispatch queue
-            //by doing this, we're able to update the UI
-            DispatchQueue.main.async {
-                searchBar.resignFirstResponder() //dismiss the keyboard, remove the cursor
-            }
-            
-        }
-    }
-    
-}
+//}
