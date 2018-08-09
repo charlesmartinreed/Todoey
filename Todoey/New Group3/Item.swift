@@ -13,6 +13,7 @@ class Item: Object {
     
     @objc dynamic var title: String = ""
     @objc dynamic var done: Bool = false
+    @objc dynamic var dateCreated: Date?
     
     //backward relationship, pointing to the many to one
     //each item has a parent category of type Category, from the items property on that type

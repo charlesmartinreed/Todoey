@@ -71,9 +71,12 @@ class ToDoListViewController: UITableViewController {
     //fired when we click on a cell
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
 
+        //toggle the checkmark on the checklist items
         if let item = todoItems?[indexPath.row] {
             do {
                 try realm.write {
+                    //click to remove item from the list -- NOT CURRENTLY USED
+                    //realm.delete(item)
                     item.done = !item.done
                 }
             } catch {
@@ -105,6 +108,8 @@ class ToDoListViewController: UITableViewController {
                     try self.realm.write {
                         let newItem = Item()
                         newItem.title = textField.text!
+                        newItem.dateCreated = Date()
+                        
                         currentCategory.items.append(newItem) //creates the relationship between item and category
                     }
                 } catch {
@@ -141,36 +146,30 @@ class ToDoListViewController: UITableViewController {
 
 //instead of adding a million different delegate methods at the class defintion, we can extend it as such
 //MARK: - Search bar methods
-//extension ToDoListViewController: UISearchBarDelegate {
-//
-//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-//        //reload the table view, using text that the user has entered
-//        let request: NSFetchRequest<Item> = Item.fetchRequest()
-//
-//        //using NSPredicate - when we hit search, the query text is used to search whether the title of the entity attribute matches - case and diactric insensitive with [cd]
-//        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-//
-//        //sort the data returned
-//        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-//
-//        //return the filtered data to the tableView
-//        loadItems(with: request, predicate: predicate)
-//
-//    }
-//
-//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-//        //triggered when text is entered or, for our use case, when the x button is clicked to clear out the entered text
-//
-//        if searchBar.text?.count == 0 {
-//            loadItems() //has a default request of pulling all items from our data store
-//
-//            //we need to speak to the main thread, by talking to the dispatch queue
-//            //by doing this, we're able to update the UI
-//            DispatchQueue.main.async {
-//                searchBar.resignFirstResponder() //dismiss the keyboard, remove the cursor
-//            }
-//
-//        }
-//    }
+extension ToDoListViewController: UISearchBarDelegate {
 
-//}
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+        //querying with Realm - filtering the todoItems List
+        //filtering by the query, case and diactric insensitive, and filtering by title from A-Z
+        todoItems = todoItems?.filter("title CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "dateCreated", ascending: true)
+        
+        tableView.reloadData()
+    }
+
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        //triggered when text is entered or, for our use case, when the x button is clicked to clear out the entered text
+
+        if searchBar.text?.count == 0 {
+            loadItems() //has a default request of pulling all items from our data store
+
+            //we need to speak to the main thread, by talking to the dispatch queue
+            //by doing this, we're able to update the UI
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder() //dismiss the keyboard, remove the cursor
+            }
+
+        }
+    }
+
+}
